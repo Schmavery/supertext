@@ -1,0 +1,27 @@
+{
+  "manifest_version": 2,
+
+  "name": "Text",
+  "description": "AutoComplete?",
+  "version": "1.0",
+
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_popup": "app.html"
+  },
+
+  "background": { "scripts": ["background.js"]},
+
+  "permissions": ["tabs", "http://*/*", "https://*/*", "file:///*/*"],
+
+  "content_scripts": [
+    {
+        "matches": [ "http://*/*", "https://*/*", "file:///*/*"],
+        "css": ["injectedCss.css"],
+        "js": ["jquery-1.10.1.js", "fuse.min.js", "jquery.caretposition.js", "parse.min.js", "hashmap.js", "socket.io.min.js", "thesaurus","textManager.js"],
+        "all_frames": true
+    }
+  ],
+
+  "web_accessible_resources": ["injectedCss.css", "jquery-1.10.1.js", "parse.min.js", "fuse.min.js", "jquery.caretposition.js", "hashmap.js", "socket.io.min.js", "thesaurus","textManager.js"]
+}
