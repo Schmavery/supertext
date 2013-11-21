@@ -1,157 +1,139 @@
 // Globals: dict, currentWord, suggestionsIndex, suggestions, document
 
 var Please = (function($) {
-    var dict = [];
-    var SavedDictionary = null;
-    var savedDict = null;
-    var suggestionsIndex = 0;
-    var suggestions = [];
-    var web = "";
+    // NEW CLEAN CODE FROM HERE
+    var dictionary = [];
     var ALPHAS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'-_"
-    var SPACE_KEY = 32;
-    var UP_KEY = 188;
-    var DOWN_KEY = 190;
-    var F_KEY = 70;
-    var C_KEY = 67;
-    var thes = new Map();
-    var USER_ID = "123456789";
-    var doubleBackspace = 0;
-    var offsetLeft = 0, offsetTop = 0;
-    var offsetConstant = 4;
-    var isOn = false;
-
-    var please = {
-        start: function(callback) {
-            // Set the event handlers
-            $(document).keydown(keyPressed);
-            // loadDictionary();
-
-            // $(window).focus(function() {
-            //     if(isOn)
-            //         loadDictionary();
-            // });
-
-            // Rewrite push so that we save it everytime we push
-            dict.push = function (){
-                for( var i = 0, l = arguments.length; i < l; i++ )
-                {
-                    this[this.length] = arguments[i];
-                }
-
-                if(savedDict) {
-                    savedDict.set('dict', dict);
-                    savedDict.save();
-                }
-                return this.length;
-            };
-
-            var lines = ALLDATA.split('*');
-
-            for (var i = lines.length - 1; i >= 0; i--) {
-                var words = lines[i].split(/[ \s]+/);
-                thes.set(words[0], words.slice(1, words.length - 1));
-            };
-
-            Parse.initialize("vGoyexsmOZWiBc75B1J7QWiQloHuQ0VlaXjl88b2", "IyL0wnodV3e41IytbRhqxBt2JSFekFHKAds7u0Kt");
-
-            SavedDictionary = Parse.Object.extend("SavedDictionary");
-            // savedDict = new SavedDictionary();
-            loadDictionary(callback);
-
-            // Get the thesaurus
-            // $.get("thesaurus", function(data) {
-            //
-            // });
-
-
-            web = getWebsite();
-            offsetConstant = (web === "gmail" ? 4 : web === "jsfiddle" ? 9 : 4);
-        },
-
-        getRelevant: function (query) {
-                $(".foundString").removeClass(".foundString");
-                console.log(thes.get(query));
-
-                var body = $(document.body).html();
-                synonyms = [];
-                if (thes.has(query)){
-                    synonyms = thes.get(query);
-                }
-                synonyms.push(query);
-                for (var i = 0; i < synonyms.length; i++) {
-                    var index = body.indexOf(synonyms[i]);
-                    while (index != -1) {
-                        var beginning = body.substring(0,index);
-                        var middle = '<span class="foundString">' + synonyms[i] + "</span>";
-                        var end = body.substring(index + synonyms[i].length, body.length);
-                        body = beginning + middle + end;
-                        index = body.indexOf(synonyms[i], index + middle.length);
-                        console.log(index + "  " + synonyms[i]);
-                    }
-                }
-                $(document.body).html(body);
-            }
+    var KEYS = {
+        space: 32,
+        biggerThan: 188,
+        smallerThan: 190,
+        f: 70,
+        c: 67,
+        escape: 27,
+        backspace: 8
     };
-    function loadDictionary(callback) {
-        console.log("Querying database...");
-        var query = new Parse.Query(SavedDictionary);
 
-        query.equalTo("USER_ID", USER_ID);
-        query.find({
-            success: function(saveDictionary) {
-                savedDict = saveDictionary[0];
-                if(savedDict){
-                    dict = saveDictionary[0].get("dict");
-                    isOn = saveDictionary[0].get("state");
-                    // console.log(dict);
-
-                    // Rewrite push so that we save it everytime we push
-                    dict.push = function (){
-                        for( var i = 0, l = arguments.length; i < l; i++ )
-                        {
-                            this[this.length] = arguments[i];
-                        }
-
-                        console.log("dict " + dict);
-
-                        if(savedDict) {
-                            savedDict.save({'dict': dict}, {
-                                success: function() {
-                                    savedDict.set('dict', dict);
-                                    console.log("saved");
-                                },
-                                error: function(obj, error) {
-                                    console.log("ERROR");
-                                }
-                            });
-                        }
-                        return this.length;
-                    };
-                    var div = document.createElement('div');
-                    $(div).addClass("searchResult");
-                    $(div).html("<span style='position: absolute; top: 30px; left: 30px;'>SuperText ready.</span>");
-                    $(div).css({opacity: 1, width: 150, height: 100, "font-size": 20, left: "calc(100% - 151px)", top: "0px", "background-image": "-webkit-linear-gradient(right bottom, #FFFFFF 0%, GhostWhite 100%)"});
-                    document.body.appendChild(div);
-                    $(div).animate({opacity: 0}, 1500);
-
-                    console.log("Dictionary loaded.");
-                    if(callback)
-                        callback();
-                } else {
-                    savedDict = new SavedDictionary();
-                    savedDict.set("USER_ID", USER_ID);
-                    savedDict.set("dict", []);
-                    savedDict.set("request", "");
-                    savedDict.save();
-                }
-            },
-            error: function(object, error) {
-                console.log("Error: " + error);
-            }
-        })
+    var thes = new Map();
+    var port = null;
+    var website = "";
+    var settings = {
+        gmail: {},
+        icloud: {},
+        jsfiddle: {},
+        wiki: {},
+        default: {}
     }
 
-    function getSuggestions(str) {
+    var suggestionsBox = {
+        draw: makeBox,
+        curIndex: 0,
+        nextSuggestion: function() {
+            this.curIndex = (this.curIndex - 1 + this.suggestions.length) % this.suggestions.length;
+            this.draw();
+        },
+        prevSuggestion: function() {
+            this.curIndex = (this.curIndex + 1 + this.suggestions.length) % this.suggestions.length;
+            this.draw();
+        },
+        suggestions: []
+    }
+
+    // This is called whenever we want to save the current dictionary into the
+    // local storage area. We pass a some data to save and a callback which
+    // will be called when the data has been saved. The arguments sent to the
+    // call back are {data: data}. In the case of setLocalStorage, the data
+    // will be just a string indicating that we're done saving.
+    function saveDictionary(dict, callback) {
+        chrome.extension.sendRequest(
+            {method: "setLocalStorage", data: dict},
+            callback);
+    }
+
+    // This is called whenever we want an update on the stored dicitonary
+    // It will send a request to the background script which will query the
+    // localstorage database and send a response of the form {data: data}
+    function loadDictionary(callback) {
+        chrome.extension.sendRequest(
+            {method: "getLocalStorage", data: "dictionary"},
+            function(response) {
+                dictionary = response.data;
+                if(callback)
+                    callback();
+        });
+    }
+
+    // This function has to be called in order for everything to work.
+    // It setsup the event handlers, loads the thesaurus, queries the
+    // database for the current dictionary and sets up a message passing port
+    // between the background script and this script
+    function start(callback) {
+        $(document).keydown(keyPressed);
+
+        // Load thesaurus, rough way (TODO: change that loading)
+        var lines = ALLDATA.split('*');
+        for (var i = lines.length - 1; i >= 0; i--) {
+            var words = lines[i].split(/[ \s]+/);
+            thes.set(words[0], words.slice(1, words.length - 1));
+        }
+
+        // Get the website (have different settings depending on the website)
+        website = getWebsite();
+
+        port = chrome.extension.connect({name: "onButton"});
+        port.onMessage.addListener(function(nessage) {
+            if(message.button === "onOff") {
+                isOn = message.state;
+            }
+        })
+
+        loadDictionary(callback);
+    }
+
+    // This function will color all the words that are similar to the one
+    // passed as an argument
+    function getRelevant(word) {
+        // this gets all the previously colored words and removes any tags
+        // around them
+        $(".foundString").contents().unwrap();
+
+        var body = $(document.body).html();
+        synonyms = [];
+        if (thes.has(word)){
+            synonyms = thes.get(word);
+        }
+        synonyms.push(word);
+        for (var i = 0; i < synonyms.length; i++) {
+            var index = body.indexOf(synonyms[i]);
+            while (index != -1) {
+                var beginning = body.substring(0,index);
+                var middle = '<span class="foundString">' + synonyms[i] + "</span>";
+                var end = body.substring(index + synonyms[i].length, body.length);
+                body = beginning + middle + end;
+                index = body.indexOf(synonyms[i], index + middle.length);
+                // console.log(index + "  " + synonyms[i]);
+            }
+        }
+        $(document.body).html(body);
+    }
+
+    function getWebsite() {
+        if(document.URL.indexOf("facebook") !== -1) {
+            return "facebook";
+        } else if (document.URL.indexOf("mail.google") !== -1) {
+            return "gmail";
+        } else if (document.URL.indexOf("icloud") !== -1) {
+            return "icloud";
+        } else if(document.URL.indexOf("jsfiddle") !== -1) {
+            return "jsfiddle";
+        } else if(document.URL.indexOf("wikipedia") !== -1) {
+            return "wiki"
+        } else {
+            return "default";
+        }
+    }
+
+    function getSuggestions(str, dict) {
         var f = new Fuse(dict);
         result = f.search(str);
         return result.map(function(val) {
@@ -159,15 +141,265 @@ var Please = (function($) {
         })
     }
 
-    function clearSuggestions(){
-        suggestions = [];
-        makeBox();
-    }
-
     function keyPressed(key) {
         if(isOn) {
             parseKeyPress(key, getCaretPosition(key.target) - 1, getText(key.target));
         }
+    }
+
+    function parseKeyPress(key) {
+        if (!key) return;
+
+        switch (key.which) {
+            case KEYS.escape:
+                $(".foundString").contents().unwrap();
+                break;
+            case: KEYS.f:
+                // TODO: clean this too
+                if(key.ctrlKey && key.shiftKey) {
+                    var search = prompt("Search for: ");
+                    if(search === null)
+                        return;
+
+                    var splittedSearch = search.split(":");
+
+                    if(splittedSearch.length === 1) {
+                        please.getRelevant(splittedSearch[0]);
+                        return;
+                    }
+                    searchInCategory(splittedSearch[0], splittedSearch[1], function(result) {
+                        // TODO: check createTextBox and make it nice
+                        // createTextbox(result, splittedSearch[1]);
+                    });
+                }
+                break;
+            case KEYS.c:
+                if(key.ctrlKey && key.shiftKey) {
+                    var cat = prompt("Save under: ");
+
+                    if(cat || cat.length === 0)
+                        return;
+                    // TODO: check categorizeHighlightedText and make it nice
+                    // categorizeHighlightedText(cat);
+                }
+                break;
+            case KEYS.biggerThan:
+                if(key.ctrlKey) {
+                    suggestionsBox.nextSuggestion();
+                }
+                break;
+            case KEYS.smallerThan:
+                if(key.ctrlKey) {
+                    suggestionsBox.prevSuggestion();
+               }
+               break;
+            case KEYS.space:
+                if(key.ctrlKey) {
+                    // TODO: AUTOCOMPLETE STUFF HERE
+                } else {
+                    // TODO: save the word that was just typed in dictionary
+                }
+                break;
+            default:
+                return;
+        }
+
+        if (key.which === SPACE_KEY && key.ctrlKey) { // Ctrl + Space -- autocomplete
+            // var curWord = getCurWord(cursorIndex, text);
+            // // suggestions = getSuggestions(curWord);
+
+            // replaceWord(key.target, cursorIndex - curWord.length, curWord, suggestions[suggestionsIndex]);
+            // if(suggestions[suggestionsIndex]) {
+            //     setCaretPosition(key.target, cursorIndex + suggestions[suggestionsIndex].length - curWord.length + 1);
+            //     // setCursor(key.target, 5);
+            // }
+
+            // if(suggestions[suggestionsIndex]) {
+            //     offsetLeft += 7*(suggestions[suggestionsIndex].length - curWord.length + 1);
+            // }
+            // clearSuggestions();
+
+        } else if (isAlpha(String.fromCharCode(key.which)) || key.which === 8) {
+            if(key.which === F_KEY && key.ctrlKey && key.altKey) {
+
+            }
+            if(key.which === C_KEY && key.ctrlKey && key.altKey && key.shiftKey) {
+
+            }
+
+            // if(doubleBackspace == 2) {
+            //     if(dict.length) {
+            //         dict.length--;
+            //         savedDict.save({dict: dict});
+            //     }
+            // }
+            // var curWord = getCurWord(cursorIndex, text);
+            // suggestions = getSuggestions(curWord);
+            // suggestionsIndex = 0;
+
+            // var pos = $(key.target).getCaretPosition();
+            // var textPos = $(key.target).position();
+            // var thirdPos = (web === "gmail" ? {left: 830 + offsetLeft, top: 310 + offsetTop} : {left: 0, top: 0})
+            // thirdPos = (web === "jsfiddle" ? {left: 260 + offsetLeft, top: 170 + offsetTop} : thirdPos);
+
+            // thirdPos = (web === "wiki" ? {left: 210, top: 230 + offsetTop} : thirdPos);
+
+            // $("#tip").css({
+            //     left: pos.left + textPos.left + thirdPos.left,
+            //     top: 5 + pos.top + textPos.top + thirdPos.top
+            // }).show();
+
+            // makeBox();
+
+            // if (text.length === 1 && key.which === 8){
+            //     clearSuggestions();
+            // }
+        } else if (key.which === UP_KEY && key.ctrlKey) { // Up
+
+        } else if (key.which === DOWN_KEY && key.ctrlKey) { // Down
+
+        } else if (isWhitespace(String.fromCharCode(key.which))) {
+            // if(key.which === 13) {
+            //     offsetTop += offsetConstant;
+            //     offsetLeft = 0;
+            // }
+            // var word = getCurWord(cursorIndex, text);
+            // if(word) {
+            //     var found = false;
+            //     for (var i = 0; i < dict.length; i++) {
+            //         if (dict[i] === word) {
+            //             found = true;
+            //             break;
+            //         }
+            //     }
+            //     if (!found && word.length > 4){
+            //         dict.push(word);
+            //         didYouMean(word, function(correct) {
+            //             console.log("Did you mean: " + correct);
+            //         });
+            //     }
+
+            // }
+            // clearSuggestions();
+        }
+    }
+
+    // TODO: clean this up
+    function makeBox(){
+        if ($("#tip").length === 0){
+            // Make new box
+            $(document.body).append("<div id=\"tip\" style=\"background-color:LightGrey;\"></div>");
+        }
+        var fulltext = "<table>";
+        for (var i = 0; i < suggestions.length; i++){
+
+            fulltext += (i === suggestionsIndex) ? "<tr><td><b>" : "<tr><td>";
+            fulltext += suggestions[i];
+            fulltext += (i === suggestionsIndex) ? "</b></th></td>" : "<td><tr>";
+        }
+        fulltext += "</table>"
+        $("#tip").html(fulltext);
+
+
+
+    function isAlpha(ch) {
+        return (ALPHAS.indexOf(ch) != -1)
+    }
+
+
+    // TO HERE
+    var dict = [];
+    var SavedDictionary = null;
+    var savedDict = null;
+    var suggestionsIndex = 0;
+    var suggestions = [];
+
+    var USER_ID = "123456789";
+    var doubleBackspace = 0;
+    var offsetLeft = 0, offsetTop = 0;
+    var offsetConstant = 4;
+    var isOn = null;
+
+
+    var please = {
+        start: function(callback) {
+
+            Parse.initialize("vGoyexsmOZWiBc75B1J7QWiQloHuQ0VlaXjl88b2", "IyL0wnodV3e41IytbRhqxBt2JSFekFHKAds7u0Kt");
+
+            SavedDictionary = Parse.Object.extend("SavedDictionary");
+            // savedDict = new SavedDictionary();
+
+            // Get the thesaurus
+            // $.get("thesaurus", function(data) {
+            //
+            // });
+
+        },
+
+
+    };
+    // function loadDictionary(callback) {
+    //     console.log("Querying database...");
+    //     var query = new Parse.Query(SavedDictionary);
+
+    //     query.equalTo("USER_ID", USER_ID);
+    //     query.find({
+    //         success: function(saveDictionary) {
+    //             savedDict = saveDictionary[0];
+    //             if(savedDict){
+    //                 dict = saveDictionary[0].get("dict");
+    //                 isOn = saveDictionary[0].get("state");
+    //                 // console.log(dict);
+
+    //                 // Rewrite push so that we save it everytime we push
+    //                 dict.push = function (){
+    //                     for( var i = 0, l = arguments.length; i < l; i++ )
+    //                     {
+    //                         this[this.length] = arguments[i];
+    //                     }
+
+    //                     console.log("dict " + dict);
+
+    //                     if(savedDict) {
+    //                         savedDict.save({'dict': dict}, {
+    //                             success: function() {
+    //                                 savedDict.set('dict', dict);
+    //                                 console.log("saved");
+    //                             },
+    //                             error: function(obj, error) {
+    //                                 console.log("ERROR");
+    //                             }
+    //                         });
+    //                     }
+    //                     return this.length;
+    //                 };
+    //                 var div = document.createElement('div');
+    //                 $(div).addClass("searchResult");
+    //                 $(div).html("<span style='position: absolute; top: 30px; left: 30px;'>SuperText ready.</span>");
+    //                 $(div).css({opacity: 1, width: 150, height: 100, "font-size": 20, left: "calc(100% - 151px)", top: "0px", "background-image": "-webkit-linear-gradient(right bottom, #FFFFFF 0%, GhostWhite 100%)"});
+    //                 document.body.appendChild(div);
+    //                 $(div).animate({opacity: 0}, 1500);
+
+    //                 console.log("Dictionary loaded.");
+    //                 if(callback)
+    //                     callback();
+    //             } else {
+    //                 savedDict = new SavedDictionary();
+    //                 savedDict.set("USER_ID", USER_ID);
+    //                 savedDict.set("dict", []);
+    //                 savedDict.set("request", "");
+    //                 savedDict.save();
+    //             }
+    //         },
+    //         error: function(object, error) {
+    //             console.log("Error: " + error);
+    //         }
+    //     })
+    // }
+
+    function clearSuggestions(){
+        suggestions = [];
+        makeBox();
     }
 
     function parseKeyPress(key, cursorIndex, text) {
@@ -372,13 +604,6 @@ var Please = (function($) {
         return text.substring(beg, cursorIndex + 1);
     }
 
-    function isWhitespace(ch) {
-        return !isAlpha(ch);
-    }
-
-    function isAlpha(ch) {
-        return (ALPHAS.indexOf(ch) != -1)
-    }
     function replaceWord(div, pos, oldWord, newWord) {
         console.log("Replace '" + oldWord + "' with '" + newWord + "'");
 
@@ -425,22 +650,6 @@ var Please = (function($) {
             } else {
                 return $(div).html();
             }
-        }
-    }
-
-    function getWebsite() {
-        if(document.URL.indexOf("facebook") !== -1) {
-            return "facebook";
-        } else if (document.URL.indexOf("mail.google") !== -1) {
-            return "gmail";
-        } else if (document.URL.indexOf("icloud") !== -1) {
-            return "icloud";
-        } else if(document.URL.indexOf("jsfiddle") !== -1) {
-            return "jsfiddle";
-        } else if(document.URL.indexOf("wikipedia") !== -1) {
-            return "wiki"
-        } else {
-            return "default";
         }
     }
 
@@ -511,22 +720,6 @@ var Please = (function($) {
             range.moveStart('character', pos);
             range.select();
         }
-    }
-
-    function makeBox(){
-        if ($("#tip").length === 0){
-            // Make new box
-            $(document.body).append("<div id=\"tip\" style=\"background-color:LightGrey;\"></div>");
-        }
-        var fulltext = "<table>";
-        for (var i = 0; i < suggestions.length; i++){
-
-            fulltext += (i === suggestionsIndex) ? "<tr><td><b>" : "<tr><td>";
-            fulltext += suggestions[i];
-            fulltext += (i === suggestionsIndex) ? "</b></th></td>" : "<td><tr>";
-        }
-        fulltext += "</table>"
-        $("#tip").html(fulltext);
     }
 
 

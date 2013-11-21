@@ -23,5 +23,9 @@
     }
   ],
 
+  "permissions": [
+    "storage"
+  ],
+
   "web_accessible_resources": ["injectedCss.css", "jquery-1.10.1.js", "parse.min.js", "fuse.min.js", "jquery.caretposition.js", "hashmap.js", "socket.io.min.js", "thesaurus","textManager.js"]
 }
