@@ -1,4 +1,4 @@
-supertext
-=========
+#supertext
+---
 
 Contextual autocomplete Chrome extension.
