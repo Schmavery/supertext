@@ -16,10 +16,10 @@
     {
         "matches": [ "http://*/*", "https://*/*", "file:///*/*"],
         "css": ["injectedCss.css"],
-        "js": ["jquery-1.10.1.js", "fuse.min.js", "jquery.caretposition.js", "hashmap.js", "thesaurus","textManager.js"],
+        "js": ["jquery-1.10.1.js", "fuse.min.js", "jquery.caretposition.js", "hashmap.js", "thesaurus", "Bacon.js","textManager.js"],
         "all_frames": true
     }
   ],
 
-  "web_accessible_resources": ["injectedCss.css", "jquery-1.10.1.js", "fuse.min.js", "jquery.caretposition.js", "hashmap.js", "thesaurus","textManager.js"]
+  "web_accessible_resources": ["injectedCss.css", "jquery-1.10.1.js", "fuse.min.js", "jquery.caretposition.js", "hashmap.js", "thesaurus", "Bacon.js","textManager.js"]
 }
