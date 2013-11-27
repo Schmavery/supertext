@@ -38,7 +38,7 @@ function letterPressed(key) {
 //   var pos = $(key.target).getCaretPosition();
 //   var textPos = $(key.target).position();
 //   if (text.length === 1 && key.which === 8) {
-    
+
 //   };
 
 
@@ -147,11 +147,6 @@ function whiteSpacePressed(key) {
   //   // TODO: save the word that was just typed in dictionary
   // }
 }
-
-// Exports is used to make the functions public in the main file
-exports.letterPressed = letterPressed;
-exports.commandPressed = commandPressed;
-exports.whiteSpacePressed = whiteSpacePressed;
 
 
 

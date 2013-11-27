@@ -1,13 +1,12 @@
-// Globals: dict, currentWord, suggestionsIndex, suggestions, document
-
-var Please = (function($) {
+(function($) {
   // NEW CLEAN CODE FROM HERE
 
   // Load modules here
   var rwController = require("./replaceWord.js");
-  var eventController = require("./eventController.js");
+  var localStorage = require("./localStorage.js");
+  var Bacon = require("./Bacon.js").Bacon;
 
-
+// Global variables
   var dictionary = [];
   var ALPHAS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'-_"
   var KEYS = {
@@ -80,7 +79,7 @@ var Please = (function($) {
         fulltext += (i === suggestionsIndex) ? "</b></th></td>" : "<td><tr>";
       }
       fulltext += "</table>"
-      $("#tip").html(fulltext);,
+      $("#tip").html(fulltext);
     },
 
     nextSuggestion: function() {
@@ -94,16 +93,16 @@ var Please = (function($) {
     }
   };
 
+
   // This function has to be called in order for everything to work.
   // It setsup the event handlers, loads the thesaurus, queries the
   // database for the current dictionary and sets up a message passing port
   // between the background script and this script
   function start(callback) {
-    // $(document).keydown(keyPressed);
-
     loadStreams();
 
     // Load thesaurus, rough way (TODO: change that loading)
+    var ALLDATA = require("./thesaurus");
     var lines = ALLDATA.split('*');
     for (var i = lines.length - 1; i >= 0; i--) {
       var words = lines[i].split(/[ \s]+/);
@@ -120,7 +119,12 @@ var Please = (function($) {
       }
     })
 
-    loadDictionary(callback);
+    localStorage.load("dictionary", function(data) {
+      dictionary = data.dictionary;
+      console.log("Loaded: " + dictionary);
+      if(callback)
+        callback();
+    });
   }
 
 
@@ -136,12 +140,12 @@ var Please = (function($) {
 
     // LetterStream is literaly a stream of letters, you can do whatever you want with them
     var letterStream = keyStream.filter(function(key){
-      return isAlpha(String.fromCharCode(key.keyCode));
+      return isAlpha(String.fromCharCode(key.which)) && !key.ctrlKey && !key.shiftKey;
     });
 
     function filterCommands(key) {
       for(var k in KEYS) {
-        if(KEYS[k] === key.keyCode) {
+        if(KEYS[k] === key.which) {
           return true;
         }
       }
@@ -151,18 +155,18 @@ var Please = (function($) {
     var commandStream = keyStream.filter(filterCommands);
 
     var whiteSpaceStream = keyStream.filter(function(key) {
-      return isWhitespace(String.fromCharCode(key.keyCode)) && !filterCommands(key);
+      return !isAlpha(String.fromCharCode(key.which)) && !filterCommands(key);
     });
 
 
     // Now we attach event handlers to the different streams that are
     // dependent of the nature of the stream
     // TODO: repair this first draft
-    letterStream.onValue(eventController.letterPressed);
+    letterStream.onValue(letterPressed);
 
-    commandStream.onValue(eventController.commandPressed);
+    commandStream.onValue(commandPressed);
 
-    whiteSpaceStream.onValue(eventController.whiteSpacePressed);
+    whiteSpaceStream.onValue(whiteSpacePressed);
   }
 
   // This function will color all the words that are similar to the one
@@ -218,7 +222,7 @@ var Please = (function($) {
 
   function keyPressed(key) {
     if(isOn) {
-      parseKeyPress(key, getCaretPosition(key.target) - 1, getText(key.target));
+      parseKeyPress(key, getCaretPosition(key.target) - 1, getText(key.target, website));
     }
   }
 
@@ -238,7 +242,7 @@ var Please = (function($) {
   function getCurWord(cursorIndex, text) {
     var beg = 0;
     for (var i = cursorIndex; i >= 0; i--) {
-      if (isWhitespace(text.charAt(i))) {
+      if (!isAlpha(text.charAt(i))) {
         beg = i + 1;
         break;
       }
@@ -302,11 +306,11 @@ var Please = (function($) {
 
 
   function getText(div) {
-    if(web === "facebook") {
+    if(website === "facebook") {
       console.log("NOPE");
-    } else if(web === "gmail") {
+    } else if(website === "gmail") {
       return $(div).html().replace("&nbsp;", " ");
-    } else if (web === "icloud"){
+    } else if (website === "icloud"){
       // var txt = "";
       // var t = $("text");
       // var l = $("text").length;
@@ -412,12 +416,9 @@ var Please = (function($) {
   }
 
   function searchInCategory(category, search, callback) {
-    var query = new Parse.Query("SavedDictionary");
-    query.equalTo("USER_ID", USER_ID);
-    query.find({
-      success: function(results) {
-      var list = (category ? results[0].get(category) : results[0].get(category));
-      // console.log("list: " + list);
+    localStorage.load("category", function(results) {
+      var list = results;
+      console.log("SearchInCategory list: " + list);
       if (!list) {
         callback("");
         return;
@@ -454,34 +455,19 @@ var Please = (function($) {
         callback("");
 
       callback(list[maxSynIndex]);
-      },
-      error: function(error) {
-      alert("Error: " + error.code + " " + error.message);
-      }
     });
   }
-  function saveInCategory(category, highlight) {
-    //var data = Parse.Object.extend();
-    var query = new Parse.Query("SavedDictionary");
-    query.equalTo("USER_ID", USER_ID);
-    query.find({
-      success: function(results) {
-        var list = results[0].get(category);
-        if (list) {
-          list.push(highlight);
+
+  function saveInCategory(category, highlight, callback) {
+    localStorage.load("category", function(response) {
+        if(response.data) {
+          response.data.push(highlight);
         } else {
-          list = [highlight];
+          response.data = [response.data];
         }
-
-        results[0].set(category, list);
-        results[0].save();
-        },
-        error: function(error) {
-        alert("Error: " + error.code + " " + error.message);
-        }
-      });
+        localStorage.save({category: response.data}, callback);
+    });
   }
-
 
   function categorizeHighlightedText(category) {
 
@@ -503,43 +489,40 @@ var Please = (function($) {
     html = (html.split(/\s+/)).join(" ");
     // .replace(/<\/?[^>]+(>|$)/g, "");;
     // console.log(html);
-    console.log("saved: " + html);
-     saveInCategory(category, html);
-
-  }
-
-  function createTextbox(text, search) {
-    if(text.length === 0 || search.length === 0)
-      text = "No matching category or word found.";
-    var textbox = document.createElement('div');
-    var inside = document.createElement('div');
-    var body = text.toLowerCase();
-    search = search.split(" ");
-
-    for (var i = 0; i < search.length; i++) {
-      var index = body.indexOf(search[i]);
-      while (index != -1) {
-        var beginning = body.substring(0,index);
-        var middle = '<span class="foundString">' + search[i] + "</span>";
-        var end = body.substring(index + search[i].length, body.length);
-        body = beginning + middle + end;
-        index = body.indexOf(search[i], index + middle.length);
-        // console.log(index + "  " + search[i]);
-      }
-    }
-    $(inside).html(body);
-    $(inside).addClass("inside");
-    $(textbox).addClass("searchResult");
-    textbox.appendChild(inside);
-    document.body.appendChild(textbox);
-    $(document).click(function() {
-      $(textbox).remove();
+    localStorage.saveInCategory(category, html, function() {
+      console.log("Successfully saved: " + html);
     });
   }
 
-  return please;
+  // function createTextbox(text, search) {
+  //   if(text.length === 0 || search.length === 0)
+  //     text = "No matching category or word found.";
+  //   var textbox = document.createElement('div');
+  //   var inside = document.createElement('div');
+  //   var body = text.toLowerCase();
+  //   search = search.split(" ");
+
+  //   for (var i = 0; i < search.length; i++) {
+  //     var index = body.indexOf(search[i]);
+  //     while (index != -1) {
+  //       var beginning = body.substring(0,index);
+  //       var middle = '<span class="foundString">' + search[i] + "</span>";
+  //       var end = body.substring(index + search[i].length, body.length);
+  //       body = beginning + middle + end;
+  //       index = body.indexOf(search[i], index + middle.length);
+  //       // console.log(index + "  " + search[i]);
+  //     }
+  //   }
+  //   $(inside).html(body);
+  //   $(inside).addClass("inside");
+  //   $(textbox).addClass("searchResult");
+  //   textbox.appendChild(inside);
+  //   document.body.appendChild(textbox);
+  //   $(document).click(function() {
+  //     $(textbox).remove();
+  //   });
+  // }
+
+  start();
 })(jQuery);
-
-
-Please.start();
 

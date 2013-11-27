@@ -34,8 +34,10 @@ function replaceWordjsFiddle(div, pos, oldWord, newWord) {
   console.log("Not implemented yet...");
 }
 
-exports.replaceWordGmail = replaceWordGmail;
-exports.replaceWordFacebook = replaceWordFacebook;
-exports.replaceWordiCloud = replaceWordiCloud;
-exports.replaceWordjsFiddle = replaceWordjsFiddle;
-exports.replaceWordDefault = replaceWordDefault;
+module.exports = {
+  replaceWordGmail: replaceWordGmail,
+  replaceWordjsFiddle: replaceWordjsFiddle,
+  replaceWordFacebook: replaceWordFacebook,
+  replaceWordiCloud: replaceWordiCloud,
+  replaceWordDefault: replaceWordDefault
+};

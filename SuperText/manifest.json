@@ -3,7 +3,7 @@
 
   "name": "Text",
   "description": "AutoComplete?",
-  "version": "1.1",
+  "version": "0.5",
 
   "browser_action": {
     "default_icon": "icon.png",
@@ -16,10 +16,12 @@
     {
         "matches": [ "http://*/*", "https://*/*", "file:///*/*"],
         "css": ["injectedCss.css"],
-        "js": ["jquery-1.10.1.js", "fuse.min.js", "jquery.caretposition.js", "hashmap.js", "thesaurus", "Bacon.js", "dictionaryController.js", "eventController.js", "replaceWord.js", "textManager.js"],
+        "js": ["jquery-1.10.1.js", "fuse.min.js", "hashmap.js", "eventController.js", "compiled.js"],
         "all_frames": true
     }
   ],
-
-  "web_accessible_resources": ["injectedCss.css", "jquery-1.10.1.js", "fuse.min.js", "jquery.caretposition.js", "hashmap.js", "thesaurus", "Bacon.js", "dictionaryController.js", "eventController.js", "replaceWord.js", "textManager.js"]
+  "background": {
+    "scripts": ["storage.js"]
+  },
+  "web_accessible_resources": ["injectedCss.css", "jquery-1.10.1.js", "fuse.min.js", "hashmap.js", "eventController.js", "compiled.js"]
 }

@@ -1,4 +1,4 @@
-var ALLDATA = "foul                dirty soiled disgusting unpleasant*\
+module.exports = "foul                dirty soiled disgusting unpleasant*\
 mirage              optical illusion deception imagined *\
 genre               kind category species type class *\
 untie               loosen free unbind *\
