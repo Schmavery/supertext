@@ -2,13 +2,16 @@
 // Pevious code is below, this is outdated, but the idea is still correct
 // Just implement the todos and don't mind me, there's no free lunch
 
+var suggestions;
+var suggestionsIndex;
 
 // This function will be called when any alphanumerical key is pressed
 function letterPressed(key) {
   // TODO: Implemente the previous code (below) using the new API
 
+
   // Here is what you have access to:
-  // - getCurWord and getSUggestions (just look the textManager.js to find those)
+  // - getCurWord and getSuggestions (just look the textManager.js to find those)
   // - suggestionsBox which is an object that has the following properties:
   //    * curIndex: the current index stored as an int
   //    * suggestions: an array of the current suggestions
@@ -24,6 +27,29 @@ function letterPressed(key) {
   // We'll change the names later.
   // If you have any question, take a look at textManager.js (the part that's been refactored)
   // Then ask me.
+  console.log("letterPressed");
+
+//   var cursorIndex = getCaretPosition(key.target);
+//   var text = getText(tey.target);
+//   var curWord = getCurWord(cursorIndex, text);
+//   var suggestions = getSuggestions(curWord);
+//   suggestionsIndex = 0;
+
+//   var pos = $(key.target).getCaretPosition();
+//   var textPos = $(key.target).position();
+//   if (text.length === 1 && key.which === 8) {
+    
+//   };
+
+
+// // Change the $("#tip") css property
+//    $("#tip").css({
+//        left: pos.left + textPos.left + settings[website].suggestionsBoxOffset.left,
+//        top: 5 + pos.top + textPos.top + settings[website].suggestionsBoxOffset.top
+//   }).show();  suggestionsBox.curIndex = suggestionsIndex;
+//   suggestionsBox.suggestions = suggestions;
+//   suggestionsBox.draw();
+
 
 
   // Here is the old code (rest is below below)
@@ -61,14 +87,11 @@ function commandPressed(key) {
   // escape (remove the search divs)
   // ctrl + <
   // ctrl + >
+    console.log("commandPressde");
 
-
-
-  // The old code is below
-  // if(key.keyCode === KEYS.escape)
-  //   $(".foundString").contents().unwrap();
-
-
+  // if (key.keyCode === KEYS.escape) {
+  //    $(".foundString").contents().unwrap();
+  // }
 
   // if(key.ctrlKey && key.shiftKey) {
   //   var search = prompt("Search for: ");
@@ -115,6 +138,8 @@ function commandPressed(key) {
 function whiteSpacePressed(key) {
   // TODO: save the word that was just entered in the dictionary
   // Again the old code is below
+
+  console.log("whiteSpacePressed");
 
   // if(key.ctrlKey) {
   //   // TODO: AUTOCOMPLETE STUFF HERE
