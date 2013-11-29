@@ -15,6 +15,7 @@
 .buttonbar
 {
 	padding: 5;
+	text-align: center;
 	z-index: 5;
 	position: fixed;
 	width:100%;
@@ -29,4 +30,9 @@
 	background: -ms-linear-gradient(top,  #b3bead 0%,#dfe5d7 60%,#fcfff4 100%); /* IE10+ */
 	background: linear-gradient(to bottom,  #b3bead 0%,#dfe5d7 60%,#fcfff4 100%); /* W3C */
 	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#b3bead', endColorstr='#fcfff4',GradientType=0 ); /* IE6-9 */
+}
+
+.deletebtn
+{
+	float: right;
 }
