@@ -11,9 +11,12 @@ $(function() {
     });
   }
 
+  var dict;
+
   loadDict(["cat", "mouse", "dog", "rat", "giraffe", "elephant", "pikachu", "cat", "mouse", "dog", "rat", "giraffe", "elephant", "pikachu"]);
   // loadDictionary(loadDict);
-  function loadDict(dict){
+  function loadDict(d){
+    dict = d;
     var wrapper = document.createElement("div");
     $(wrapper).addClass("wrapper");
 
@@ -35,12 +38,23 @@ $(function() {
     document.body.appendChild(wrapper);
   }
 
-  function editDict(btn){
-    console.log("Editing dict");
-//    var dictItems = document.getElementsByClassName("dictItem");
-    console.log(btn);
-    console.log($(btn.target).parent());
-    $(btn.target).parent().remove();
+  function editDict(e){
+    var html = $(e.target).parent().html();
+    var index = html.indexOf("<");
+    var word = html.substring(0, index);
+    
+    var arr_index = dict.indexOf(word);
+    if (arr_index > -1){
+      dict.splice(arr_index, 1);
+      $(e.target).parent().remove();
+      console.log(word + " removed!");
+    } else {
+      console.log("Removal error!");
+    }
+  }
+
+  function saveDict(){
+    console.log("Dict saved!");
   }
 
 });

@@ -90,7 +90,7 @@ $(function() {
     addMenuItem("Help", 1, function(){alert("Shortcuts:\n Ctrl+Shift+F - similar search\n Ctrl+Shift+C - create/set category\n Ctrl+Space - select autocomplete\n Ctrl+< - move up auto selection\n Ctrl+> - move down auto selection")});
     addMenuItem("About", 2, function(){alert("This is SuperText.  Meet the future in interacting textually with your favourite browser, Chrome.\n\nWritten in 24 hours at Y-Hack 2013 by:\n Benjamin, Eric, David and Avery.")});
     addMenuItem("View Dictionary", 3, function(){
-      chrome.windows.create({'url': chrome.extension.getURL('dictView.html')}, function(tab) {
+      chrome.windows.create({'type' : 'panel', 'url': chrome.extension.getURL('dictView.html')}, function(tab) {
         // Tab opened.
       });});
   });
