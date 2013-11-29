@@ -11,10 +11,15 @@ $(function() {
     });
   }
 
+  function saveDict(d){
+    chrome.storage.sync.set({"dictionary" : d}, function() {});
+  }
+
   var dict;
 
   loadDict(["cat", "mouse", "dog", "rat", "giraffe", "elephant", "pikachu", "cat", "mouse", "dog", "rat", "giraffe", "elephant", "pikachu"]);
-  // loadDictionary(loadDict);
+  
+  loadDictionary(loadDict);
   function loadDict(d){
     dict = d;
     var wrapper = document.createElement("div");
@@ -53,9 +58,5 @@ $(function() {
     }
   }
 
-  function saveDict(){
-    console.log("Dict saved!");
-  }
 
 });
-
