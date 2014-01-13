@@ -1,11 +1,26 @@
 $(function() {
+
+  chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
+    if(request.method === "getLocalStorage") {
+      chrome.storage.sync.get(request.data, function(data) {
+        sendResponse({data: data});
+      });
+    } else if(request.method === "setLocalStorage") {
+      chrome.storage.sync.set(request.data, function() {
+        sendResponse({data: request.data});
+      });
+    } else {
+      sendResponse({data: "Error, unknown method"});
+    }
+  });
+
   var toggleState;
-  if (localStorage.getItem('toggle')=='off'){
-    toggleState = false;
-  }
-  else{
-    toggleState = true;
-  }
+//  if (localStorage.getItem('toggle')=='off'){
+//    toggleState = false;
+//  }
+//  else{
+//    toggleState = true;
+//  }
 
   function toggle(){
     if (toggleState) {
@@ -84,10 +99,18 @@ $(function() {
     addMenuItem("Clear Dictionary", 0, function(){
       chrome.storage.sync.set({"dictionary" : []}, function() {
         alert("Dictionary Cleared.");
+        window.close();
       });
     });
-    addMenuItem("Help", 1, function(){alert("Shortcuts:\n Ctrl+Shift+F - similar search\n Ctrl+Shift+C - create/set category\n Ctrl+Space - select autocomplete\n Ctrl+< - move up auto selection\n Ctrl+> - move down auto selection")});
-    addMenuItem("About", 2, function(){alert("This is SuperText.  Meet the future in interacting textually with your favourite browser, Chrome.\n\nWritten in 24 hours at Y-Hack 2013 by:\n Benjamin, Eric, David and Avery.")});
+    addMenuItem("Help", 1, function(){
+      alert("Shortcuts:\n Ctrl+Shift+F - similar search\n Ctrl+Shift+C - create/set category\n Ctrl+Space - select autocomplete\n Ctrl+< - move up auto selection\n Ctrl+> - move down auto selection")
+      window.close();
+    });
+      
+    addMenuItem("About", 2, function(){
+      alert("This is SuperText.  Meet the future in interacting textually with your favourite browser, Chrome.\n\nWritten in 24 hours at Y-Hack 2013 by:\n Benjamin, Eric, David and Avery.")
+      window.close();
+    });
     addMenuItem("View Dictionary", 3, function(){
       chrome.windows.create({'type' : 'panel', 'url': chrome.extension.getURL('dictView.html')}, function(tab) {
         // Tab opened.
