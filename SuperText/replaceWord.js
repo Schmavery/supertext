@@ -9,7 +9,7 @@ function replaceWordGmail(div, pos, oldWord, newWord) {
 
 function replaceWordDefault(div, pos, oldWord, newWord) {
   var txt = $(div).val().trim();
-  var first = txt.substring(0, pos + 1);
+  var first = txt.substring(0, pos);
   var last = txt.substring(pos + oldWord.length + 1, txt.length);
   $(div).val(first + newWord + last);
 }

@@ -2496,7 +2496,7 @@ function replaceWordGmail(div, pos, oldWord, newWord) {
 
 function replaceWordDefault(div, pos, oldWord, newWord) {
   var txt = $(div).val().trim();
-  var first = txt.substring(0, pos + 1);
+  var first = txt.substring(0, pos);
   var last = txt.substring(pos + oldWord.length + 1, txt.length);
   $(div).val(first + newWord + last);
 }
@@ -2560,6 +2560,10 @@ module.exports = {
       suggestionsBoxOffset: {
         left: 830,
         top: 310
+      },
+
+      textPos: function(t){
+        return $(t).position();
       }
     },
     icloud: {
@@ -2567,6 +2571,10 @@ module.exports = {
       suggestionsBoxOffset: {
         left: 0,
         top: 0
+      },
+
+      textPos: function(t){
+        return $(t).position();
       }
     },
     jsfiddle: {
@@ -2574,6 +2582,13 @@ module.exports = {
       suggestionsBoxOffset: {
         left: 260,
         top: 170
+      },
+
+      textPos: function(t){
+        var obj = $(t).position();
+        obj.left = -obj.left;
+        // obj.top = -obj.top;
+        return obj;
       }
     },
     wiki: {
@@ -2581,6 +2596,10 @@ module.exports = {
       suggestionsBoxOffset: {
         left: 210,
         top: 230
+      },
+
+      textPos: function(t){
+        return $(t).position();
       }
     },
     default: {
@@ -2588,6 +2607,10 @@ module.exports = {
       suggestionsBoxOffset: {
         left: 0,
         top: 0
+      },
+
+      textPos: function(t){
+        return $(t).position();
       }
     }
   }
@@ -2604,11 +2627,11 @@ module.exports = {
         $(document.body).append("<div id=\"tip\" style=\"background-color:LightGrey;\"></div>");
       }
       var fulltext = "<table>";
-      for (var i = 0; i < suggestions.length; i++){
+      for (var i = 0; i < this.suggestions.length; i++){
 
-        fulltext += (i === suggestionsIndex) ? "<tr><td><b>" : "<tr><td>";
-        fulltext += suggestions[i];
-        fulltext += (i === suggestionsIndex) ? "</b></th></td>" : "<td><tr>";
+        fulltext += (i === this.curIndex) ? "<tr><td><b>" : "<tr><td>";
+        fulltext += this.suggestions[i];
+        fulltext += (i === this.curIndex) ? "</b></th></td>" : "<td><tr>";
       }
       fulltext += "</table>"
       $("#tip").html(fulltext);
@@ -2622,8 +2645,358 @@ module.exports = {
     prevSuggestion: function() {
       this.curIndex = (this.curIndex + 1 + this.suggestions.length) % this.suggestions.length;
       this.draw();
+    },
+
+    setSuggestions: function(sug) {
+      this.suggestions = sug;
+      this.draw();
+    },
+
+    clearSuggestions: function(){
+      this.setSuggestions([]); // YOLO
+      this.curIndex = 0;
     }
   };
+
+  // Pevious code is below, this is outdated, but the idea is still correct
+  // Just implement the todos and don't mind me, there's no free lunch
+
+  // Copy pasted from stackoverflow
+  function getCaretPosition(editableDiv) {
+    // console.log(editableDiv);
+    var tag = $(editableDiv).prop("tagName");
+    // If Textare, then we do this:
+    if(tag === "TEXTAREA" || tag === "INPUT") {
+      if (editableDiv.selectionStart) {
+        return editableDiv.selectionStart;
+      } else if (document.selection) {
+        editableDiv.focus();
+
+        var r = document.selection.createRange();
+        if (r == null) {
+          return 0;
+        }
+
+        var re = editableDiv.createTextRange(),
+          rc = re.duplicate();
+        re.moveToBookmark(r.getBookmark());
+        rc.setEndPoint('EndToStart', re);
+
+        return rc.text.length;
+      }
+    } else if(tag === "DIV") {
+      // If div, then we do this:
+      var caretPos = 0, containerEl = null, sel, range;
+      if (window.getSelection) {
+        sel = window.getSelection();
+        if (sel.rangeCount) {
+          range = sel.getRangeAt(0);
+          if (range.commonAncestorContainer.parentNode == editableDiv) {
+            caretPos = range.endOffset;
+          }
+        }
+      } else if (document.selection && document.selection.createRange) {
+        range = document.selection.createRange();
+        if (range.parentElement() == editableDiv) {
+          var tempEl = document.createElement("span");
+          editableDiv.insertBefore(tempEl, editableDiv.firstChild);
+          var tempRange = range.duplicate();
+          tempRange.moveToElementText(tempEl);
+          tempRange.setEndPoint("EndToEnd", range);
+          caretPos = tempRange.text.length;
+        }
+      }
+      return caretPos;
+    } else {
+      console.log("getCaretPosition: NOT SUPPORTED FIELD")
+      return 0;
+    }
+  }
+  function getText(div) {
+    if(website === "facebook") {
+      console.log("NOPE");
+    } else if(website === "gmail") {
+      return $(div).html().replace("&nbsp;", " ");
+    } else if (website === "icloud"){
+      // var txt = "";
+      // var t = $("text");
+      // var l = $("text").length;
+      // for(var i = 0; i < l; i++) {
+      //     txt += (t[i]).textContent.replace("&nbsp;", " ").replace(/<.+>|\n+/g, "");
+      // }
+      // console.log(txt);
+      // return txt;
+      return "";
+    } else {
+      var tag = $(div).prop("tagName");
+      if(tag === "TEXTAREA" || tag === "INPUT") {
+        return $(div).val();
+      } else {
+        return $(div).html();
+      }
+    }
+  }
+
+  // This function will be called when any alphanumerical key is pressed
+  function letterPressed(key) {
+    // TODO: Implemente the previous code (below) using the new API
+
+
+    // Here is what you have access to:
+    // - getCurWord and getSuggestions (just look the textManager.js to find those)
+    // - suggestionsBox which is an object that has the following properties:
+    //    * curIndex: the current index stored as an int
+    //    * suggestions: an array of the current suggestions
+    //    * draw: a function that you call (No arguments) that will draw the box
+    //            but you still need to specify a position by changing the $("#tip")
+    //            css property (this wil be changed soon)
+    //    * nextSuggestion and prevSuggestion: functions that will move the
+    //            current index, and redraw the box at the same position
+    // - settings object that contains properties that varies between websites
+    // example: if you need to move the suggestionsBox to be next to the div in gmal
+    // just do
+    // $("#").css({top: whateverY + settings[website].suggestionsBoxOffset.top, left: whateverX + settings[website].suggestionsBoxOffset.left})
+    // We'll change the names later.
+    // If you have any question, take a look at textManager.js (the part that's been refactored)
+    // Then ask me.
+    console.log("letterPressed");
+    localStorage.load("dictionary", function(data) {
+      dictionary = data.dictionary;
+      var cursorIndex = getCaretPosition(key.target);
+      var text = getText(key.target);
+      var curWord = getCurWord(cursorIndex, text);
+      var suggestions = getSuggestions(curWord, dictionary);
+
+      // var pos = $(key.target).getCaretPosition();
+      var pos = {
+        top: 10,
+        left: 5
+      }
+      var textPos = settings[website].textPos(key.target);
+      if (text.length === 1 && key.which === 8) {
+
+      };
+
+      // console.log(textPos);
+      // console.log(pos);
+      // console.log(settings[website].suggestionsBoxOffset);
+
+    // Change the $("#tip") css property
+     $("#tip").css({
+      left: pos.left + textPos.left + settings[website].suggestionsBoxOffset.left,
+      top: 5 + pos.top + textPos.top + settings[website].suggestionsBoxOffset.top
+      }).show();
+
+      suggestionsBox.setSuggestions(suggestions);
+    });
+
+    // Here is the old code (rest is below below)
+
+    // var curWord = getCurWord(cursorIndex, text);
+    // suggestions = getSuggestions(curWord);
+    // suggestionsIndex = 0;
+
+    // var pos = $(key.target).getCaretPosition();
+    // var textPos = $(key.target).position();
+    // var thirdPos = (web === "gmail" ? {left: 830 + offsetLeft, top: 310 + offsetTop} : {left: 0, top: 0})
+    // thirdPos = (web === "jsfiddle" ? {left: 260 + offsetLeft, top: 170 + offsetTop} : thirdPos);
+
+    // thirdPos = (web === "wiki" ? {left: 210, top: 230 + offsetTop} : thirdPos);
+
+    // $("#tip").css({
+    //     left: pos.left + textPos.left + thirdPos.left,
+    //     top: 5 + pos.top + textPos.top + thirdPos.top
+    // }).show();
+
+    // makeBox();
+
+    // if (text.length === 1 && key.which === 8){
+    //     clearSuggestions();
+    // }
+  }
+
+
+  // This function will be called when a command key is pressed
+  // Those are defined in the object KEYS that maps names of keys to key numbers
+  function commandPressed(key) {
+    // TODO: re implement all the commands like before, except nicer plz
+    // ctrl + space (autocomplete)
+    // ctrl + shift + C (save highlighted)
+    // ctrl + shift + F (search)
+    // escape (remove the search divs)
+    // ctrl + <
+    // ctrl + >
+    console.log("commandPressed");
+    var cursorIndex = getCaretPosition(key.target);
+    var text = getText(key.target);
+    var curWord = getCurWord(cursorIndex, text);
+    var suggestions = suggestionsBox.suggestions;
+    var suggestionsIndex = suggestionsBox.curIndex;
+
+    // if (key.keyCode === KEYS.escape) {
+    //    $(".foundString").contents().unwrap();
+    // }
+
+    // if(key.ctrlKey && key.shiftKey) {
+    //   var search = prompt("Search for: ");
+    //   if(search === null)
+    //     return;
+
+    //   var splittedSearch = search.split(":");
+
+    //   if(splittedSearch.length === 1) {
+    //     please.getRelevant(splittedSearch[0]);
+    //     return;
+    //   }
+    //   searchInCategory(splittedSearch[0], splittedSearch[1], function(result) {
+    //     // TODO: check createTextBox and make it nice
+    //     // createTextbox(result, splittedSearch[1]);
+    //   });
+    // }
+
+    // if(key.ctrlKey && key.shiftKey) {
+    //   var cat = prompt("Save under: ");
+
+    //   if(cat || cat.length === 0)
+    //     return;
+    //   // TODO: check categorizeHighlightedText and make it nice
+    //   // categorizeHighlightedText(cat);
+    // }
+
+    if(key.which === KEYS.space && suggestions[suggestionsIndex] !== undefined) {
+
+      settings[website].replaceWord(key.target, cursorIndex - curWord.length, curWord, suggestions[suggestionsIndex]);
+
+      setCaretPosition(key.target, cursorIndex + suggestions[suggestionsIndex].length - curWord.length + 1);
+        // setCursor(key.target, 5);
+        // offsetLeft += 7*(suggestions[suggestionsIndex].length - curWord.length + 1);
+      suggestionsBox.clearSuggestions();
+    }
+
+
+    if (key.which === KEYS.biggerThan) {
+      suggestionsBox.nextSuggestion();
+    } else if (key.which === KEYS.smallerThan) {
+      suggestionsBox.prevSuggestion();
+    }
+  }
+
+
+  // This function will be called when a key that is not a command, nor an aphanumerical
+  // is pressed.
+  function whiteSpacePressed(key) {
+    // TODO: save the word that was just entered in the dictionary
+    // Again the old code is below
+    var cursorIndex = getCaretPosition(key.target);
+    var text = getText(key.target);
+
+    console.log("whiteSpacePressed");
+
+    // TODO: save the word that was just typed in dictionary
+    var word = getCurWord(cursorIndex, text);
+    if(word) {
+        var found = false;
+        for (var i = 0; i < dictionary.length; i++) {
+            if (dictionary[i] === word) {
+                found = true;
+                break;
+            }
+        }
+        if (!found && word.length > 4){
+          dictionary.push(word);
+          // didYouMean(word, function(correct) {
+          //     console.log("Did you mean: " + correct);
+          // });
+          localStorage.save({"dictionary" : dictionary}, function(){
+          });
+        }
+
+    }
+    suggestionsBox.clearSuggestions();
+  }
+
+
+
+  //   if (key.which === SPACE_KEY && key.ctrlKey) { // Ctrl + Space -- autocomplete
+  //     // var curWord = getCurWord(cursorIndex, text);
+  //     // // suggestions = getSuggestions(curWord);
+
+  //     // replaceWord(key.target, cursorIndex - curWord.length, curWord, suggestions[suggestionsIndex]);
+  //     // if(suggestions[suggestionsIndex]) {
+  //     //     setCaretPosition(key.target, cursorIndex + suggestions[suggestionsIndex].length - curWord.length + 1);
+  //     //     // setCursor(key.target, 5);
+  //     // }
+
+  //     // if(suggestions[suggestionsIndex]) {
+  //     //     offsetLeft += 7*(suggestions[suggestionsIndex].length - curWord.length + 1);
+  //     // }
+  //     // clearSuggestions();
+
+  //   } else if (isAlpha(String.fromCharCode(key.which)) || key.which === 8) {
+  //     if(key.which === F_KEY && key.ctrlKey && key.altKey) {
+
+  //     }
+  //     if(key.which === C_KEY && key.ctrlKey && key.altKey && key.shiftKey) {
+
+  //     }
+
+  //     // if(doubleBackspace == 2) {
+  //     //     if(dict.length) {
+  //     //         dict.length--;
+  //     //         savedDict.save({dict: dict});
+  //     //     }
+  //     // }
+  //     // var curWord = getCurWord(cursorIndex, text);
+  //     // suggestions = getSuggestions(curWord);
+  //     // suggestionsIndex = 0;
+
+  //     // var pos = $(key.target).getCaretPosition();
+  //     // var textPos = $(key.target).position();
+  //     // var thirdPos = (web === "gmail" ? {left: 830 + offsetLeft, top: 310 + offsetTop} : {left: 0, top: 0})
+  //     // thirdPos = (web === "jsfiddle" ? {left: 260 + offsetLeft, top: 170 + offsetTop} : thirdPos);
+
+  //     // thirdPos = (web === "wiki" ? {left: 210, top: 230 + offsetTop} : thirdPos);
+
+  //     // $("#tip").css({
+  //     //     left: pos.left + textPos.left + thirdPos.left,
+  //     //     top: 5 + pos.top + textPos.top + thirdPos.top
+  //     // }).show();
+
+  //     // makeBox();
+
+  //     // if (text.length === 1 && key.which === 8){
+  //     //     clearSuggestions();
+  //     // }
+  //   } else if (key.which === UP_KEY && key.ctrlKey) { // Up
+
+  //   } else if (key.which === DOWN_KEY && key.ctrlKey) { // Down
+
+  //   } else if (isWhitespace(String.fromCharCode(key.which))) {
+  //     // if(key.which === 13) {
+  //     //     offsetTop += offsetConstant;
+  //     //     offsetLeft = 0;
+  //     // }
+  //     // var word = getCurWord(cursorIndex, text);
+  //     // if(word) {
+  //     //     var found = false;
+  //     //     for (var i = 0; i < dict.length; i++) {
+  //     //         if (dict[i] === word) {
+  //     //             found = true;
+  //     //             break;
+  //     //         }
+  //     //     }
+  //     //     if (!found && word.length > 4){
+  //     //         dict.push(word);
+  //     //         didYouMean(word, function(correct) {
+  //     //             console.log("Did you mean: " + correct);
+  //     //         });
+  //     //     }
+
+  //     // }
+  //     // clearSuggestions();
+  //   }
+  // }
+
 
 
   // This function has to be called in order for everything to work.
@@ -2672,12 +3045,12 @@ module.exports = {
 
     // LetterStream is literaly a stream of letters, you can do whatever you want with them
     var letterStream = keyStream.filter(function(key){
-      return isAlpha(String.fromCharCode(key.which)) && !key.ctrlKey && !key.shiftKey;
+      return isAlpha(String.fromCharCode(key.which)) && !filterCommands(key) && !key.ctrlKey;
     });
 
     function filterCommands(key) {
       for(var k in KEYS) {
-        if(KEYS[k] === key.which) {
+        if(KEYS[k] === key.which && key.ctrlKey) {
           return true;
         }
       }
@@ -2687,7 +3060,11 @@ module.exports = {
     var commandStream = keyStream.filter(filterCommands);
 
     var whiteSpaceStream = keyStream.filter(function(key) {
-      return !isAlpha(String.fromCharCode(key.which)) && !filterCommands(key);
+      var command = !filterCommands(key);
+      if(key.which === 32 || key.which === 9 || key.which === 13 || key.which === 10) {
+        return command;
+      }
+      return false;
     });
 
 
@@ -2752,22 +3129,17 @@ module.exports = {
     })
   }
 
-  function keyPressed(key) {
-    if(isOn) {
-      parseKeyPress(key, getCaretPosition(key.target) - 1, getText(key.target, website));
-    }
-  }
+  // function keyPressed(key) {
+  //   if(isOn) {
+  //     parseKeyPress(key, getCaretPosition(key.target) - 1, getText(key.target, website));
+  //   }
+  // }
 
 
 
 
   function isAlpha(ch) {
     return (ALPHAS.indexOf(ch) != -1)
-  }
-
-  function clearSuggestions(){
-    suggestions = [];
-    makeBox();
   }
 
   // This function will return the word that is currently being written, given the index and the text
@@ -2837,82 +3209,8 @@ module.exports = {
   }
 
 
-  function getText(div) {
-    if(website === "facebook") {
-      console.log("NOPE");
-    } else if(website === "gmail") {
-      return $(div).html().replace("&nbsp;", " ");
-    } else if (website === "icloud"){
-      // var txt = "";
-      // var t = $("text");
-      // var l = $("text").length;
-      // for(var i = 0; i < l; i++) {
-      //     txt += (t[i]).textContent.replace("&nbsp;", " ").replace(/<.+>|\n+/g, "");
-      // }
-      // console.log(txt);
-      // return txt;
-      return "";
-    } else {
-      if($(div).prop("tagName") === "TEXTAREA") {
-        return $(div).val();
-      } else {
-        return $(div).html();
-      }
-    }
-  }
-
-  // Copy pasted from stackoverflow
-  function getCaretPosition(editableDiv) {
-    // console.log(editableDiv);
-
-    // If Textare, then we do this:
-    if($(editableDiv).prop("tagName") === "TEXTAREA") {
-      if (editableDiv.selectionStart) {
-        return editableDiv.selectionStart;
-      } else if (document.selection) {
-        editableDiv.focus();
-
-        var r = document.selection.createRange();
-        if (r == null) {
-          return 0;
-        }
-
-        var re = editableDiv.createTextRange(),
-          rc = re.duplicate();
-        re.moveToBookmark(r.getBookmark());
-        rc.setEndPoint('EndToStart', re);
-
-        return rc.text.length;
-      }
-    } else if($(editableDiv).prop("tagName") === "DIV") {
-      // If div, then we do this:
-      var caretPos = 0, containerEl = null, sel, range;
-      if (window.getSelection) {
-        sel = window.getSelection();
-        if (sel.rangeCount) {
-          range = sel.getRangeAt(0);
-          if (range.commonAncestorContainer.parentNode == editableDiv) {
-            caretPos = range.endOffset;
-          }
-        }
-      } else if (document.selection && document.selection.createRange) {
-        range = document.selection.createRange();
-        if (range.parentElement() == editableDiv) {
-          var tempEl = document.createElement("span");
-          editableDiv.insertBefore(tempEl, editableDiv.firstChild);
-          var tempRange = range.duplicate();
-          tempRange.moveToElementText(tempEl);
-          tempRange.setEndPoint("EndToEnd", range);
-          caretPos = tempRange.text.length;
-        }
-      }
-      return caretPos;
-    } else {
-
-    }
-  }
   function setCaretPosition(ctrl, pos){
-    if(web === "gmail") {
+    if(website === "gmail") {
       setEndOfContenteditable(ctrl);
       return;
     }
@@ -3057,7 +3355,6 @@ module.exports = {
 
   start();
 })(jQuery);
-
 
 },{"./Bacon.js":1,"./localStorage.js":2,"./replaceWord.js":3,"./thesaurus":5}],5:[function(require,module,exports){
 module.exports = "foul                dirty soiled disgusting unpleasant*\

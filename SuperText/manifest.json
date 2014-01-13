@@ -16,12 +16,12 @@
     {
         "matches": [ "http://*/*", "https://*/*", "file:///*/*"],
         "css": ["injectedCss.css"],
-        "js": ["jquery-1.10.1.js", "fuse.min.js", "hashmap.js", "eventController.js", "compiled.js"],
+        "js": ["jquery-1.10.1.js", "fuse.min.js", "hashmap.js", "compiled.js"],
         "all_frames": true
     }
   ],
   "background": {
     "scripts": ["storage.js"]
   },
-  "web_accessible_resources": ["injectedCss.css", "jquery-1.10.1.js", "fuse.min.js", "hashmap.js", "eventController.js", "compiled.js"]
+  "web_accessible_resources": ["injectedCss.css", "jquery-1.10.1.js", "fuse.min.js", "hashmap.js", "compiled.js"]
 }

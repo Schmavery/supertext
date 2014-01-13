@@ -6,8 +6,8 @@ $(function() {
   // This is a local function, no need for require because we're on the extension
   // side which can have access to the chrome storage area
   function loadDictionary(sendResponse) {
-    chrome.storage.sync.get(request.data, function(data) {
-      sendResponse({data: data});
+    chrome.storage.sync.get("dictionary", function(data) {
+      sendResponse(data);
     });
   }
 
@@ -17,11 +17,10 @@ $(function() {
 
   var dict;
 
-  loadDict(["cat", "mouse", "dog", "rat", "giraffe", "elephant", "pikachu", "cat", "mouse", "dog", "rat", "giraffe", "elephant", "pikachu"]);
-  
   loadDictionary(loadDict);
+
   function loadDict(d){
-    dict = d;
+    dict = d.dictionary;
     var wrapper = document.createElement("div");
     $(wrapper).addClass("wrapper");
 
@@ -30,12 +29,12 @@ $(function() {
 
 
       $(item).addClass("dictItem").append(dict[i]);
-      
+
       var btn = $("<input>", {
         type:"button",
         value:"DELETE"
       }).addClass("deletebtn").appendTo(item);
-      
+
       btn.on("click", null, btn, editDict);
 
       wrapper.appendChild(item);
@@ -47,7 +46,7 @@ $(function() {
     var html = $(e.target).parent().html();
     var index = html.indexOf("<");
     var word = html.substring(0, index);
-    
+
     var arr_index = dict.indexOf(word);
     if (arr_index > -1){
       dict.splice(arr_index, 1);
@@ -56,6 +55,7 @@ $(function() {
     } else {
       console.log("Removal error!");
     }
+    saveDict(dict);
   }
 
 

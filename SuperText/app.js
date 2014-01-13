@@ -16,8 +16,7 @@ $(function() {
       $("#togglecover").animate({"left": "45px", "top": "0px"});
     }
     toggleState = !toggleState;
-    savedDict.set("state", toggleState)
-    savedDict.save();
+    chrome.storage.sync.set({"state" : toggleState}, function() {});
   }
 
   function addMenuItem(string, index, func){
@@ -83,9 +82,9 @@ $(function() {
     document.body.appendChild(container);
 
     addMenuItem("Clear Dictionary", 0, function(){
-      savedDict.set("dict", []);
-      savedDict.save();
-      alert("Dictionary Cleared.");
+      chrome.storage.sync.set({"dictionary" : []}, function() {
+        alert("Dictionary Cleared.");
+      });
     });
     addMenuItem("Help", 1, function(){alert("Shortcuts:\n Ctrl+Shift+F - similar search\n Ctrl+Shift+C - create/set category\n Ctrl+Space - select autocomplete\n Ctrl+< - move up auto selection\n Ctrl+> - move down auto selection")});
     addMenuItem("About", 2, function(){alert("This is SuperText.  Meet the future in interacting textually with your favourite browser, Chrome.\n\nWritten in 24 hours at Y-Hack 2013 by:\n Benjamin, Eric, David and Avery.")});
