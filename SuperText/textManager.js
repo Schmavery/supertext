@@ -27,6 +27,9 @@ var Please = (function($) {
 
       $(window).focus(function() {
         loadDictionary();
+        load("state", function (data) {
+          isOn = data.state;
+        });
       });
 
       var lines = ALLDATA.split('*');
