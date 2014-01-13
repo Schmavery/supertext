@@ -91,6 +91,7 @@ $(function() {
     addMenuItem("View Dictionary", 3, function(){
       chrome.windows.create({'type' : 'panel', 'url': chrome.extension.getURL('dictView.html')}, function(tab) {
         // Tab opened.
+      window.close();
       });});
   });
   //'type' : 'panel'
