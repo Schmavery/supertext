@@ -269,7 +269,7 @@ var Please = (function($) {
 
       var pos = $(key.target).getCaretPosition();
       var textPos = $(key.target).position();
-      var thirdPos = (web === "gmail" ? {left: 830 + offsetLeft, top: 310 + offsetTop} : {left: 0, top: 0})
+      var thirdPos = (web === "gmail" ? {left: 600 + offsetLeft, top: 270 + offsetTop} : {left: 0, top: 0})
       thirdPos = (web === "jsfiddle" ? {left: 260 + offsetLeft, top: 170 + offsetTop} : thirdPos);
 
       thirdPos = (web === "wiki" ? {left: 210, top: 230 + offsetTop} : thirdPos);
@@ -308,6 +308,7 @@ var Please = (function($) {
         }
         if (!found && word.length > 4){
           dict.push(word);
+          console.log("PUSH " + word);
           saveDictionary();
           // didYouMean(word, function(correct) {
           //     console.log("Did you mean: " + correct);
