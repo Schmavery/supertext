@@ -18,6 +18,7 @@ var Please = (function($) {
   var offsetLeft = 0, offsetTop = 0;
   var offsetConstant = 30;
   var isOn = true;
+  var increment = 0;
 
   var please = {
     start: function(callback) {
@@ -73,7 +74,7 @@ var Please = (function($) {
             var end = body.substring(index + synonyms[i].length, body.length);
             body = beginning + middle + end;
             index = body.indexOf(synonyms[i], index + middle.length);
-            console.log(index + "  " + synonyms[i]);
+            // console.log(index + "  " + synonyms[i]);
           }
         }
         $(document.body).html(body);
@@ -285,9 +286,22 @@ var Please = (function($) {
           clearSuggestions();
       }
     } else if (key.which === UP_KEY && key.ctrlKey) { // Up
+      var allHighlighted = $(".foundString");
+      if(allHighlighted.length > 0) {
+        var pos = $(allHighlighted[increment < allHighlighted.length ? increment++ : increment]).position();
+        document.body.scrollTop = pos.top - screen.height / 2;
+        // $(allHighlighted[increment]).css({backgroundColor: "red"});
+      }
       suggestionsIndex = (suggestionsIndex - 1 + suggestions.length) % suggestions.length;
       makeBox();
     } else if (key.which === DOWN_KEY && key.ctrlKey) { // Down
+      var allHighlighted = $(".foundString");
+      if(allHighlighted.length > 0) {
+        var pos = $(allHighlighted[increment > 0 ? increment-- : increment]).position();
+        document.body.scrollTop = pos.top - screen.height / 2;
+        // $(allHighlighted[increment]).css({backgroundColor: "red"});
+      }
+
       suggestionsIndex = (suggestionsIndex + 1) % suggestions.length;
 
       makeBox();
