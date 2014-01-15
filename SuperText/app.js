@@ -14,24 +14,33 @@ $(function() {
     }
   });
 
-  var toggleState;
-//  if (localStorage.getItem('toggle')=='off'){
-//    toggleState = false;
-//  }
-//  else{
-//    toggleState = true;
-//  }
-
-  function toggle(){
+  var toggleState = false;
+  chrome.storage.sync.get("state", function(d) {
+    toggleState = d.state;
+    console.log(toggleState);
     if (toggleState) {
-      localStorage.setItem('toggle', 'off');
       $("#togglecover").animate({"left": "0px", "top": "0px"});
     } else {
-      localStorage.setItem('toggle', 'on');
       $("#togglecover").animate({"left": "45px", "top": "0px"});
     }
+  });
+
+  // if (localStorage.getItem('toggle')=='off'){
+  //  toggleState = false;
+  // }
+  // else{
+  //  toggleState = true;
+  // }
+
+  function toggle(){
     toggleState = !toggleState;
-    chrome.storage.sync.set({"state" : toggleState}, function() {});
+    if (toggleState) {
+      $("#togglecover").animate({"left": "0px", "top": "0px"});
+    } else {
+      $("#togglecover").animate({"left": "45px", "top": "0px"});
+    }
+    chrome.storage.sync.set({"state" : toggleState}, function(d) {
+    });
   }
 
   function addMenuItem(string, index, func){
@@ -80,8 +89,7 @@ $(function() {
 
     if (toggleState){
       $(toggleCover).addClass("toggleButton").css({"left": "45px", "top": "0px", "background-color": "LightGrey", "box-shadow": "none"});
-    }
-    else {
+    } else {
       $(toggleCover).addClass("toggleButton").css({"left": "0px", "top": "0px", "background-color": "LightGrey", "box-shadow": "none"});
     }
     $(toggleCover).attr("id", "togglecover");
@@ -106,7 +114,7 @@ $(function() {
       alert("Shortcuts:\n Ctrl+Shift+F - similar search\n Ctrl+Shift+C - create/set category\n Ctrl+Space - select autocomplete\n Ctrl+< - move up auto selection\n Ctrl+> - move down auto selection")
       window.close();
     });
-      
+
     addMenuItem("About", 2, function(){
       alert("This is SuperText.  Meet the future in interacting textually with your favourite browser, Chrome.\n\nWritten in 24 hours at Y-Hack 2013 by:\n Benjamin, Eric, David and Avery.")
       window.close();
