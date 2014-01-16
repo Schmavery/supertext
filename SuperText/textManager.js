@@ -1,4 +1,100 @@
-// Globals: dict, currentWord, suggestionsIndex, suggestions, document
+/**
+ * Hello Shopify,
+ *
+ * first of all, thank you for organizing this hackathon, it was a lot of
+ * fun. I very impressed by some of the projects.
+ *
+ * When we heard that you wanted to look at our code, we realized that it
+ * was pretty messy, and that maybe we could explain everything in a big
+ * paragraph of comments.
+ *
+ * We called the library SuperText because it aims to enhance the
+ * experience of the user on the web upon interacting with text.
+ * What do we mean by "text" you may ask. Well let me explain.
+ *
+ * Before computers we had everything a computer has, except that it
+ * wasn't "dynamic". We had social networks, just by talking to people and
+ * going to parties to meet other people, we had mailboxes and post
+ * offices, we had a different programming language called "English", which
+ * when used approprietly, could get people to work for you and we even had
+ * the predecessor of hackernews, the oxford gazette (look it up, it's
+ * pretty darn old).
+ * Then someone figure out electricity and more precisely eletronics, and
+ * had this weird idea of using it do to some logic that he called boolean
+ * logic. After that things are little blurry, there was the first
+ * computer, the first laptop, the first mobile telephone, the first
+ * iPod, iPhone, iMac, iDontWhatImSaying etc...
+ * Oh I might have forgotten some minor details like the internet or
+ * Virtual Machines, but in globally things were going along pretty well.
+ * As of today we can load up webpages using a certain protocol on a
+ * certain virtual machine, we can code and know that everyone that has
+ * access to the internet will be able to have access to our code in
+ * (relatively) the same way, and that's just a beautiful thing.
+ *
+ * There's just something that bothers me. After all those technological
+ * improvements, those futuristic innovations on the web, we're still
+ * writing text as if it was on paper, one letter after another, like
+ * back in the old days (or when we invented writing). The computer is
+ * a wonderful thing that offers a very variety of new things we can do,
+ * it's a new media. A computer isn't just paper, it isn't just a screen
+ * and a keyboard, it isn't just a big calculator, it's a computer.
+ * We need to start thinking about using the computer in more advanced
+ * ways than just statically writing text, reading text, displaying
+ * images, communicating by chat messages, drawing on a canvas like if it
+ * was a sheet of paper and even programming thinking about memory
+ * management (but that's an entire other topic that I won't cover here).
+ * Our team tried to see the computer as a dynamic system that offers more
+ * than just show static data and that's why we created SuperText.
+ *
+ * We started by implementing autocomplete because it was the first
+ * logical step to make the webbrowser smarter, to actually start using
+ * the computer as a computer and not as a dynamic sheet of paper. Then
+ * we added a thesaurus and intelligent fuzzy-search, so you can lookup
+ * words on a webpage and find things that you didn't expect to find. We
+ * also added a feature to save paragraphs of text, and then load it
+ * by just searching in the database for certain keywords. We didn't
+ * present it today because we felt like it wasn't fully working and
+ * maybe not the main focus of our project.
+ *
+ * We intend to extend this project further and have different dictionary
+ * depending on the page you are (or you can choose a dictionary if you
+ * don't like our choice). So if you're in jsfiddle, you'll have your
+ * js/html/css dictionary and when you're on facebook, you'll have your
+ * english dictionary. We also intend to add auto-correction to the words
+ * that are added to the dictionary, so that when you re-write them, you'll
+ * get the corrected version.
+ *
+ * For the code here is how it goes. We added everything inside it's own
+ * namespace (using the anonymous function) and called it Please, so that
+ * we could do Please.start() (yes we were tired when we wrote that part).
+ * Here is some explanation of the global variables:
+ * - {array} dict is an array of all the words you've typed
+ * - {array} suggestions is an array of the current suggestions depending
+ * on the word you're currently typing
+ * - {string} web is a variable to keep the name of the website because we
+ * need to know on which website the person is currenty in, in order to
+ * load the corresponding settings.
+ * - {string} ALLDATA is a gigantic string that contains a mapping from
+ * word to word, it's our thesaurus. I know what you're thinking right now
+ * and I have one very good excuse: we only had 24h to think, so we did as
+ * fast as possible.
+ * One big problem we had was to make our autocomplete work for different
+ * websites. Gmail, facebook, icloud pages, google docs, reddit all use
+ * different ways of getting user input, so we had to load different
+ * settings depending on the website (or a default setting, for textboxes
+ * and textareas, because they are fully supported). We weren't able to
+ * make it work for google docs or icloud because they actually have they
+ * own way of pushing text on the screen: each word and line has its own
+ * div and when you're writing, you're not writing in anything, it just
+ * interprets the keys that you press. Since we can't simulate keypresses
+ * without compromising the security of the user, we stopped trying to make
+ * it work for icloud and google docs (which, I agree, is unfortunate).
+ *
+ * Because we didn't have much and because we wanted the demo to work,
+ * there is a lot of magic numbers, but it wouldn't take too much to make
+ * it a little more user friendly.
+ *
+ */
 
 var Please = (function($) {
   var dict = [];
@@ -6,14 +102,20 @@ var Please = (function($) {
   var suggestionsIndex = 0;
   var suggestions = [];
   var web = "";
+
+  // Random stuff we needed
   var ALPHAS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'-_"
   var SPACE_KEY = 32;
   var UP_KEY = 188;
   var DOWN_KEY = 190;
   var F_KEY = 70;
   var C_KEY = 67;
+
+  // Thanks to chenglou (on github) who made hashmap that is efficient
+  // enough to keep a lot of words without dying.
   var thes = new Map();
-  var USER_ID = "123456789";
+
+  // var USER_ID = "123456789";
   var doubleBackspace = 0;
   var offsetLeft = 0, offsetTop = 0;
   var offsetConstant = 30;
@@ -24,7 +126,6 @@ var Please = (function($) {
     start: function(callback) {
       // Set the event handlers
       $(document).keydown(keyPressed);
-      // loadDictionary();
 
       $(window).focus(function() {
         loadDictionary();
@@ -33,6 +134,7 @@ var Please = (function($) {
         });
       });
 
+
       var lines = ALLDATA.split('*');
 
       for (var i = lines.length - 1; i >= 0; i--) {
@@ -40,22 +142,19 @@ var Please = (function($) {
         thes.set(words[0], words.slice(1, words.length - 1));
       };
 
-      // Parse.initialize("vGoyexsmOZWiBc75B1J7QWiQloHuQ0VlaXjl88b2", "IyL0wnodV3e41IytbRhqxBt2JSFekFHKAds7u0Kt");
-
-      // SavedDictionary = Parse.Object.extend("SavedDictionary");
-      // savedDict = new SavedDictionary();
       loadDictionary(callback);
-
-      // Get the thesaurus
-      // $.get("thesaurus", function(data) {
-      //
-      // });
-
 
       web = getWebsite();
       offsetConstant = (web === "gmail" ? 4 : web === "jsfiddle" ? 9 : 4);
     },
 
+    /**
+     * Search function (when pressing ctrl + alt + f)
+     * It will highlight all the words that it found (and its synonymes)
+     * in the html (so yes, you can search for div and you'll break the
+     * html)
+     * @param  {string} query the sequence of words you're looking for.
+     */
     getRelevant: function (query) {
         $(".foundString").removeClass(".foundString");
         console.log(thes.get(query));
@@ -80,7 +179,6 @@ var Please = (function($) {
         $(document.body).html(body);
       }
   };
-
 
   function save(obj, callback) {
     chrome.extension.sendRequest({
