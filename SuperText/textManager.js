@@ -153,7 +153,7 @@ var Please = (function($) {
      * It will highlight all the words that it found (and its synonymes)
      * in the html (so yes, you can search for div and you'll break the
      * html)
-     * @param  {string} query the sequence of words you're looking for.
+     * @param  {String} query the sequence of words you're looking for.
      */
     getRelevant: function (query) {
         $(".foundString").removeClass(".foundString");
@@ -180,6 +180,13 @@ var Please = (function($) {
       }
   };
 
+  /**
+   * Save the data into the localstorage (using a backgroung script because
+   * this script is injected in the webpage and doesn't have access to the
+   * chrome extension storage)
+   * @param  {Object}   obj      the object you're willing to saveq
+   * @param  {Function} callback its name is pretty straight forward
+   */
   function save(obj, callback) {
     chrome.extension.sendRequest({
       method: "setLocalStorage",
@@ -187,6 +194,11 @@ var Please = (function($) {
     }, callback);
   }
 
+  /**
+   * Loads same data based on a string query
+   * @param  {String}   data     string query that will be mapped to an object
+   * @param  {Function} callback will be called with the newly loaded data as argument
+   */
   function load(data, callback) {
     chrome.extension.sendRequest(
       {method: "getLocalStorage", data: data},
@@ -195,6 +207,10 @@ var Please = (function($) {
     });
   }
 
+  /**
+   * Some wrapper around the *load* function
+   * @param  {Function} callback
+   */
   function loadDictionary (callback) {
     load("dictionary", function (data) {
       if(data.dictionary){
@@ -206,71 +222,20 @@ var Please = (function($) {
     });
   }
 
+  /**
+   * Wrapper function around save to save the dictionary
+   */
   function saveDictionary(){
     save({"dictionary": dict}, function(d){
-
     });
   }
 
-  // function loadDictionary(callback) {
-  //   console.log("Querying database...");
-  //   var query = new Parse.Query(SavedDictionary);
-
-  //   query.equalTo("USER_ID", USER_ID);
-  //   query.find({
-  //     success: function(saveDictionary) {
-  //       savedDict = saveDictionary[0];
-  //       if(savedDict){
-  //         dict = saveDictionary[0].get("dict");
-  //         isOn = saveDictionary[0].get("state");
-  //         // console.log(dict);
-
-  //         // Rewrite push so that we save it everytime we push
-  //         dict.push = function (){
-  //           for( var i = 0, l = arguments.length; i < l; i++ )
-  //           {
-  //             this[this.length] = arguments[i];
-  //           }
-
-  //           console.log("dict " + dict);
-
-  //           if(savedDict) {
-  //             savedDict.save({'dict': dict}, {
-  //               success: function() {
-  //                 savedDict.set('dict', dict);
-  //                 console.log("saved");
-  //               },
-  //               error: function(obj, error) {
-  //                 console.log("ERROR");
-  //               }
-  //             });
-  //           }
-  //           return this.length;
-  //         };
-  //         var div = document.createElement('div');
-  //         $(div).addClass("searchResult");
-  //         $(div).html("<span style='position: absolute; top: 30px; left: 30px;'>SuperText ready.</span>");
-  //         $(div).css({opacity: 1, width: 150, height: 100, "font-size": 20, left: "calc(100% - 151px)", top: "0px", "background-image": "-webkit-linear-gradient(right bottom, #FFFFFF 0%, GhostWhite 100%)"});
-  //         document.body.appendChild(div);
-  //         $(div).animate({opacity: 0}, 1500);
-
-  //         console.log("Dictionary loaded.");
-  //         if(callback)
-  //           callback();
-  //       } else {
-  //         savedDict = new SavedDictionary();
-  //         savedDict.set("USER_ID", USER_ID);
-  //         savedDict.set("dict", []);
-  //         savedDict.set("request", "");
-  //         savedDict.save();
-  //       }
-  //     },
-  //     error: function(object, error) {
-  //       console.log("Error: " + error);
-  //     }
-  //   })
-  // }
-
+  /**
+   * This is were we get the suggestions depending on the current dictionary and the give string query. We used a library to have fuzzy search called Fuse (https://github.com/krisk/Fuse)
+   * @param  {String} str a string whose existence in the dictionary will
+   * be checked
+   * @return {Array}      an array of all the results
+   */
   function getSuggestions(str) {
     var f = new Fuse(dict);
     result = f.search(str);
@@ -279,17 +244,35 @@ var Please = (function($) {
     })
   }
 
+  /**
+   * This empties out the suggestion box which is in charge of displaying
+   * all the suggestions
+   */
   function clearSuggestions(){
     suggestions = [];
     makeBox();
   }
 
+  /**
+   * Event handler for any key presses
+   * @param  {Event.key} key an even that a key was pressed
+   */
   function keyPressed(key) {
     if(isOn) {
       parseKeyPress(key, getCaretPosition(key.target) - 1, getText(key.target));
     }
   }
 
+  /**
+   * This is were everything is done. This function interprets the user
+   * input in order to choose what to do depending on what the user typed.
+   * This is a pretty messy function that does all kind of stuff like
+   * rending the textbox in which the suggestions appear, save the words
+   * entered etc...
+   * @param  {Event.key} key         the keypress event
+   * @param  {integer} cursorIndex position of the cursor in the text
+   * @param  {String} text        text written sofar
+   */
   function parseKeyPress(key, cursorIndex, text) {
     if (!key) return;
     // Check at end of text or followed by whitespace
@@ -431,6 +414,13 @@ var Please = (function($) {
       clearSuggestions();
     }
   }
+
+  /**
+   * Function that we're going to implement later, it's the google "did
+   * you mean" feature.
+   * @param  {String}   word     given word to check it it's right
+   * @param  {Function} callback
+   */
   function didYouMean(word, callback) {
     // var query = new Parse.Query("SavedDictionary");
     // query.equalTo("USER_ID", USER_ID);
@@ -448,6 +438,12 @@ var Please = (function($) {
     // });
   }
 
+  /**
+   * This function is used to set the carret position at the end of the
+   * newly added word (something that is strangely difficult).
+   * @param {DomElement.div} contentEditableElement the div in which the
+   * user is writting
+   */
   function setEndOfContenteditable(contentEditableElement)
   {
     contentEditableElement = $(".Am.Al.editable.LW-avf")[0];
@@ -475,28 +471,17 @@ var Please = (function($) {
       range.select();//Select the range (make it the visible selection
     }
   }
-  // function setCursor(node,pos){
-  //     if(web === "gmail") {
-  //         setEndOfContenteditable(node);
-  //         return;
-  //     }
-  // var node = (typeof node == "string" ||
-  // node instanceof String) ? document.getElementById(node) : node;
-  //     if(!node){
-  //         return false;
-  //     }else if(node.createTextRange){
-  //         var textRange = node.createTextRange();
-  //         textRange.collapse(true);
-  //         textRange.moveEnd(pos);
-  //         textRange.moveStart(pos);
-  //         textRange.select();
-  //         return true;
-  //     }else if(node.setSelectionRange){
-  //         node.setSelectionRange(pos,pos);
-  //         return true;
-  //     }
-  //     return false;
-  // }
+
+  /**
+   * Very important function, it will read whatever you've written sofar
+   * and go back char per char until it finds a space and will consider
+   * this list of characters as being the word you're trying to write.
+   * @param  {Integer} cursorIndex the cursor position in the text
+   * @param  {String} text        the entire text that is in the current
+   * div in which the user is writting
+   * @return {String}             the current word that the user wants to
+   * autocomplete
+   */
   function getCurWord(cursorIndex, text) {
     var beg = 0;
     for (var i = cursorIndex; i >= 0; i--) {
@@ -508,13 +493,35 @@ var Please = (function($) {
     return text.substring(beg, cursorIndex + 1);
   }
 
+  /**
+   * Returns true if the given character is a whitespace (defined as not an
+   * alphanumerical)
+   * @param  {Character}  ch the character to check
+   * @return {Boolean}    whether or not the given char is a whitespace
+   */
   function isWhitespace(ch) {
     return !isAlpha(ch);
   }
 
+  /**
+   * The exact opposite of the function above, isWhitespace.
+   * @param  {Character}  ch given character that needs to be checked
+   * @return {Boolean}
+   */
   function isAlpha(ch) {
     return (ALPHAS.indexOf(ch) != -1)
   }
+
+  /**
+   * This function will repalce *oldWord* in *div* at *pos* with *newWord*
+   * This function relies on the website properties: it will replace the
+   * word differently depending on which website you're on.
+   * @param  {DomElement.div} div     the div in which the user is
+   * currently writing
+   * @param  {Integer} pos     the carret position in the text
+   * @param  {[type]} oldWord the word to replace
+   * @param  {[type]} newWord the word to replace the old with
+   */
   function replaceWord(div, pos, oldWord, newWord) {
     console.log("Replace '" + oldWord + "' with '" + newWord + "'");
 
@@ -540,6 +547,14 @@ var Please = (function($) {
       }
     }
   }
+
+  /**
+   * This function gets the entire text that you've written. It behaves
+   * differently depending on the website.
+   * @param  {DomElement.div} div the div in which the user is currently
+   * writting
+   * @return {String}         the entire text in the div (or textarea...)
+   */
   function getText(div) {
     if(web === "facebook") {
       console.log("NOPE");
@@ -564,6 +579,10 @@ var Please = (function($) {
     }
   }
 
+  /**
+   * Simple check to set the global variable *web*
+   * @return {String} the current website in which the script is injected
+   */
   function getWebsite() {
     if(document.URL.indexOf("facebook") !== -1) {
       return "facebook";
@@ -580,7 +599,14 @@ var Please = (function($) {
     }
   }
 
-  // Copy pasted from stackoverflow
+  /**
+   * This function was taken from stackoverflow and modified a little to
+   * meet our requirements. Unfortunatly I can't find exactly were we got
+   * it from.
+   * @param  {DomElement.div} editableDiv is the div in which the user is
+   * writting
+   * @return {Integer}        The carret position in the div/textarea etc
+   */
   function getCaretPosition(editableDiv) {
     // console.log(editableDiv);
 
@@ -630,6 +656,14 @@ var Please = (function($) {
 
     }
   }
+
+  /**
+   * This function is there to take into account every possible website
+   * but is a wrapper for setEndOfCOntenteditable.
+   * @param {DomElement} ctrl a dom element in which we want to set the
+   * carret position
+   * @param {Integer} pos  The position at which we need the carret to be
+   */
   function setCaretPosition(ctrl, pos){
     if(web === "gmail") {
       setEndOfContenteditable(ctrl);
@@ -649,6 +683,9 @@ var Please = (function($) {
     }
   }
 
+  /**
+   * Helper function to draw the suggestion box
+   */
   function makeBox(){
     if ($("#tip").length === 0){
       // Make new box
@@ -665,148 +702,150 @@ var Please = (function($) {
     $("#tip").html(fulltext);
   }
 
+  // Function not used right now. They were made to save some text under a
+  // certain name
 
-  function occurrences(string, subString){
-    string+=""; subString+="";
-    string = string.toLowerCase();
-    // console.log(string);
-    if(subString.length<=0) return string.length+1;
+  // function occurrences(string, subString){
+  //   string+=""; subString+="";
+  //   string = string.toLowerCase();
+  //   // console.log(string);
+  //   if(subString.length<=0) return string.length+1;
 
-    var n=0, pos=0;
-    var step= (subString.length);
+  //   var n=0, pos=0;
+  //   var step= (subString.length);
 
-    while(true){
-      pos=string.indexOf(subString,pos);
-      if(pos>=0){ n++; pos+=step; } else break;
-    }
-    return(n);
-  }
+  //   while(true){
+  //     pos=string.indexOf(subString,pos);
+  //     if(pos>=0){ n++; pos+=step; } else break;
+  //   }
+  //   return(n);
+  // }
 
-  function searchInCategory(category, search, callback) {
-    var query = new Parse.Query("SavedDictionary");
-    query.equalTo("USER_ID", USER_ID);
-    query.find({
-     success: function(results) {
-      var list = (category ? results[0].get(category) : results[0].get(category));
-      // console.log("list: " + list);
-      if (!list) {
-        callback("");
-        return;
-      }
-      // console.log("List: " + list);
-      var searchWords = search.split(" ");
-      var synonyms = searchWords.slice();
-      for (var i = 0; i < searchWords.length; i++) {
-        if (thes.has(searchWords[i])) {
-          synonyms = synonyms.concat(thes.get(searchWords[i]));
-        }
-      }
-      var maxCount = 0;
-      var maxSynIndex = 0;
-      for (var i = 0; i < list.length; i++) {
-        var string = list[i];
-        var important = string.split(":");
+  // function searchInCategory(category, search, callback) {
+  //   var query = new Parse.Query("SavedDictionary");
+  //   query.equalTo("USER_ID", USER_ID);
+  //   query.find({
+  //    success: function(results) {
+  //     var list = (category ? results[0].get(category) : results[0].get(category));
+  //     // console.log("list: " + list);
+  //     if (!list) {
+  //       callback("");
+  //       return;
+  //     }
+  //     // console.log("List: " + list);
+  //     var searchWords = search.split(" ");
+  //     var synonyms = searchWords.slice();
+  //     for (var i = 0; i < searchWords.length; i++) {
+  //       if (thes.has(searchWords[i])) {
+  //         synonyms = synonyms.concat(thes.get(searchWords[i]));
+  //       }
+  //     }
+  //     var maxCount = 0;
+  //     var maxSynIndex = 0;
+  //     for (var i = 0; i < list.length; i++) {
+  //       var string = list[i];
+  //       var important = string.split(":");
 
-        var count = 0;
-        var j, inportance = 1;
-        for (j = 0; j < synonyms.length; j++) {
-          for(var k = 0; k < important.length; k++) {
-            importance = (k === 0 ? 4 : 1);
-            count += importance * occurrences(important[k], synonyms[j]);
-          }
-        }
-        if (count > maxCount) {
-            maxCount = count;
-            maxSynIndex = i;
-        }
-       // console.log("count: " + count);
-      }
-      if(maxSynIndex === 0)
-       callback("");
+  //       var count = 0;
+  //       var j, inportance = 1;
+  //       for (j = 0; j < synonyms.length; j++) {
+  //         for(var k = 0; k < important.length; k++) {
+  //           importance = (k === 0 ? 4 : 1);
+  //           count += importance * occurrences(important[k], synonyms[j]);
+  //         }
+  //       }
+  //       if (count > maxCount) {
+  //           maxCount = count;
+  //           maxSynIndex = i;
+  //       }
+  //      // console.log("count: " + count);
+  //     }
+  //     if(maxSynIndex === 0)
+  //      callback("");
 
-      callback(list[maxSynIndex]);
-     },
-     error: function(error) {
-      alert("Error: " + error.code + " " + error.message);
-     }
-    });
-  }
-  function saveInCategory(category, highlight) {
-    //var data = Parse.Object.extend();
-    var query = new Parse.Query("SavedDictionary");
-    query.equalTo("USER_ID", USER_ID);
-    query.find({
-      success: function(results) {
-        var list = results[0].get(category);
-        if (list) {
-          list.push(highlight);
-        } else {
-          list = [highlight];
-        }
+  //     callback(list[maxSynIndex]);
+  //    },
+  //    error: function(error) {
+  //     alert("Error: " + error.code + " " + error.message);
+  //    }
+  //   });
+  // }
+  // function saveInCategory(category, highlight) {
+  //   //var data = Parse.Object.extend();
+  //   var query = new Parse.Query("SavedDictionary");
+  //   query.equalTo("USER_ID", USER_ID);
+  //   query.find({
+  //     success: function(results) {
+  //       var list = results[0].get(category);
+  //       if (list) {
+  //         list.push(highlight);
+  //       } else {
+  //         list = [highlight];
+  //       }
 
-        results[0].set(category, list);
-        results[0].save();
-       },
-       error: function(error) {
-        alert("Error: " + error.code + " " + error.message);
-       }
-      });
-  }
+  //       results[0].set(category, list);
+  //       results[0].save();
+  //      },
+  //      error: function(error) {
+  //       alert("Error: " + error.code + " " + error.message);
+  //      }
+  //     });
+  // }
 
 
-  function categorizeHighlightedText(category) {
+  // function categorizeHighlightedText(category) {
 
-    var html = "";
-    if (typeof window.getSelection != "undefined") {
-      var sel = window.getSelection();
-      if (sel.rangeCount) {
-        var container = document.createElement("div");
-        for (var i = 0, len = sel.rangeCount; i < len; ++i) {
-          container.appendChild(sel.getRangeAt(i).cloneContents());
-        }
-        html = container.innerHTML;
-      }
-    } else if (typeof document.selection != "undefined") {
-      if (document.selection.type == "Text") {
-        html = document.selection.createRange().htmlText;
-      }
-    }
-    html = (html.split(/\s+/)).join(" ");
-    // .replace(/<\/?[^>]+(>|$)/g, "");;
-    // console.log(html);
-    console.log("saved: " + html);
-    saveInCategory(category, html);
+  //   var html = "";
+  //   if (typeof window.getSelection != "undefined") {
+  //     var sel = window.getSelection();
+  //     if (sel.rangeCount) {
+  //       var container = document.createElement("div");
+  //       for (var i = 0, len = sel.rangeCount; i < len; ++i) {
+  //         container.appendChild(sel.getRangeAt(i).cloneContents());
+  //       }
+  //       html = container.innerHTML;
+  //     }
+  //   } else if (typeof document.selection != "undefined") {
+  //     if (document.selection.type == "Text") {
+  //       html = document.selection.createRange().htmlText;
+  //     }
+  //   }
+  //   html = (html.split(/\s+/)).join(" ");
+  //   // .replace(/<\/?[^>]+(>|$)/g, "");;
+  //   // console.log(html);
+  //   console.log("saved: " + html);
+  //   saveInCategory(category, html);
 
-  }
+  // }
 
-  function createTextbox(text, search) {
-    if(text.length === 0 || search.length === 0)
-      text = "No matching category or word found.";
-    var textbox = document.createElement('div');
-    var inside = document.createElement('div');
-    var body = text.toLowerCase();
-    search = search.split(" ");
+  // function createTextbox(text, search) {
+  //   if(text.length === 0 || search.length === 0)
+  //     text = "No matching category or word found.";
+  //   var textbox = document.createElement('div');
+  //   var inside = document.createElement('div');
+  //   var body = text.toLowerCase();
+  //   search = search.split(" ");
 
-    for (var i = 0; i < search.length; i++) {
-      var index = body.indexOf(search[i]);
-      while (index != -1) {
-        var beginning = body.substring(0,index);
-        var middle = '<span class="foundString">' + search[i] + "</span>";
-        var end = body.substring(index + search[i].length, body.length);
-        body = beginning + middle + end;
-        index = body.indexOf(search[i], index + middle.length);
-        // console.log(index + "  " + search[i]);
-      }
-    }
-    $(inside).html(body);
-    $(inside).addClass("inside");
-    $(textbox).addClass("searchResult");
-    textbox.appendChild(inside);
-    document.body.appendChild(textbox);
-    $(document).click(function() {
-      $(textbox).remove();
-    });
-  }
+  //   for (var i = 0; i < search.length; i++) {
+  //     var index = body.indexOf(search[i]);
+  //     while (index != -1) {
+  //       var beginning = body.substring(0,index);
+  //       var middle = '<span class="foundString">' + search[i] + "</span>";
+  //       var end = body.substring(index + search[i].length, body.length);
+  //       body = beginning + middle + end;
+  //       index = body.indexOf(search[i], index + middle.length);
+  //       // console.log(index + "  " + search[i]);
+  //     }
+  //   }
+  //   $(inside).html(body);
+  //   $(inside).addClass("inside");
+  //   $(textbox).addClass("searchResult");
+  //   textbox.appendChild(inside);
+  //   document.body.appendChild(textbox);
+  //   $(document).click(function() {
+  //     $(textbox).remove();
+  //   });
+  // }
 
   return please;
 })(jQuery);
